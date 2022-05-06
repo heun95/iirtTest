@@ -9,11 +9,12 @@
     #flex{
         display: flex;
         justify-content: space-around;
+        margin-top : 10px;
     }
     #left, #right{
         height: 400px;
         width: 500px;
-        border: 2px solid black;
+        border: 2px solid black;    
         overflow: auto;
     }
     .clipBoard{
@@ -37,11 +38,13 @@
 </style>
 </head>
 <body>
+    클릭시 <span class="select">파란색</span> 추가시 <sapn class="highlight">빨간색</sapn>
+
     <div id="flex">
         <div>
             <div id="left">
-                
             </div>
+            
             <br>
 
             <button id="resetBtn">실행취소</button>
@@ -119,10 +122,9 @@
 //----------------------------------------------------------
     // 로컬 스토리지에 저장하는 함수
     function f_localSave(p_arr){
-        console.log(p_arr);
         localStorage.setItem(localStorage.length, JSON.stringify(p_arr));
-
     }
+
     // 로컬 스토리지에서 값 지우는 함수
     function f_localRemove(p_key){
         localStorage.removeItem(p_key);
@@ -151,6 +153,7 @@
         }
 
     }
+    
     // addWordArr배열에 선택, 드래그한 단어 넣기
     function f_addWord(p_word){
         let wordIdx = addWordArr.indexOf(p_word);
@@ -191,17 +194,19 @@
     // 추가 버튼 클릭시 이벤트
     const addBtn = document.querySelector("#addBtn")
     addBtn.addEventListener('click', function(){
-        // addWordArr 배열에 있는 단어강조 (빨간색 bold)
-        for (let i = 0; i < addWordArr.length; i++) {
-            const clickWordObj = document.getElementsByClassName(addWordArr[i]);
-
-            f_removeClass(clickWordObj, 'select');
-            f_addClass(clickWordObj, 'highlight');
-        }   
-        // 로컬스토리지 저장
-        f_localSave(addWordArr);
-        // 오른쪽 div에 추가될 클립만들기
-        f_madeClip(addWordArr);
+        if(addWordArr.length > 0){
+            // addWordArr 배열에 있는 단어강조 (빨간색 bold)
+            for (let i = 0; i < addWordArr.length; i++) {
+                const clickWordObj = document.getElementsByClassName(addWordArr[i]);
+    
+                f_removeClass(clickWordObj, 'select');
+                f_addClass(clickWordObj, 'highlight');
+            }   
+            // 로컬스토리지 저장
+            f_localSave(addWordArr);
+            // 오른쪽 div에 추가될 클립만들기
+            f_madeClip(addWordArr);
+        }
 
     });
 
