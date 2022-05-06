@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+<style>
+    body{
+        padding: 100px;
+    }
+    #flex{
+        display: flex;
+        justify-content: space-around;
+    }
+    #left, #right{
+        height: 400px;
+        width: 500px;
+        border: 2px solid black;
+        overflow: auto;
+    }
+    .clipBoard{
+        padding: 50px;
+        margin: 0px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid black;
+    }
+    .clipBoard button{
+        height: 21px;
+    }
+    .select{
+        color: blue;
+    }
+    .highlight{
+        color: red;
+        font-weight: bolds;
+    }
+</style>
+</head>
+<body>
+    <div id="flex">
+        <div>
+            <div id="left">
+                
+            </div>
+            <br>
+
+            <button id="resetBtn">실행취소</button>
+            <button id="returnBtn">재실행</button>
+            <button id="addBtn">추가</button>
+        </div>
+        
+        <div id="right">
+     
+           
+        </div>
+        
+    </div>
+<script>
+
+    const leftDiv = document.getElementById('left');
+    let addWordArr = [];
+    let localBackup = [];
+    let rightDivBackup = '';
+
+// 텍스트 파일 불러와 단어 10만개 만들기
+    function readTextFile(file) {
+        
+        let rawFile = new XMLHttpRequest();
+        rawFile.open("GET", file, false);
+        rawFile.onreadystatechange = function () {
+            if(rawFile.readyState === 4){
+                if(rawFile.status === 200 || rawFile.status == 0){
+                    let allText = rawFile.responseText;
+                    let textByLine = allText.split("\r\n")
+                    let textArr = [];
+                    let textCode = '';
+                    const regExp = /^[a-zA-Z0-9]*$/;
+
+                    for (let i = 0; i < textByLine.length; i++) {
+                        let wordArr = textByLine[i].split(" ");
+                        // console.log(text);
+                        for (let j = 0; j < wordArr.length; j++) {
+                            let word = wordArr[j]
+                            let first = word.charAt(0);
+                            let last = word.charAt((word.length-1));
+                            
+                            // 특수문자 제거
+                            while ( !regExp.test(first) || !regExp.test(last)) {
+                                if(!regExp.test(first)){
+                                    word = word.substr(1)
+                                    first = word.charAt(0);
+                                    // console.log("first",first);
+                                }
+                                if(!regExp.test(last)){
+                                    word = word.substr(0, word.length - 1)
+                                    last = word.charAt((word.length-1));
+                                    // console.log(last);
+                                }
+                            }
+                            
+                            textArr.push(word);
+                            textCode += '<span class="word '+word+'">'+word+'</span> ';
+                            
+                            // if(textArr.length == 30000) break;
+                            // if(textArr.length == 100000) break;
+                        }
+                        // if(textArr.length == 30000) break;
+                        // if(textArr.length == 100000) break;
+                    }
+                    leftDiv.innerHTML = textCode;
+                    
+                }
+            }
+        };
+        rawFile.send(null);
+    }
+
+    readTextFile("INTERSTELLAR.txt");
+//----------------------------------------------------------
+    // 로컬 스토리지에 저장하는 함수
+    function f_localSave(p_arr){
+        console.log(p_arr);
+        localStorage.setItem(localStorage.length, JSON.stringify(p_arr));
+
+    }
+    // 로컬 스토리지에서 값 지우는 함수
+    function f_localRemove(p_key){
+        localStorage.removeItem(p_key);
+    }
+
+    // 클래스 추가하는 함수
+    function f_addClass(p_obj, p_className){
+        // 배열이 아닐시
+        if(p_obj.length == undefined){
+            p_obj.classList.add(p_className);
+        }else{ // 배열
+            for (let j = 0; j < p_obj.length; j++) {
+                p_obj[j].classList.add(p_className);
+            }
+        }
+    }
+
+    // 클래스 삭제하는 함수
+    function f_removeClass(p_obj, p_className){
+        if(p_obj.length == undefined){
+            p_obj.classList.add(p_className);
+        }else{
+            for (let j = 0; j < p_obj.length; j++) {
+                p_obj[j].classList.remove(p_className);
+            }
+        }
+
+    }
+    // addWordArr배열에 선택, 드래그한 단어 넣기
+    function f_addWord(p_word){
+        let wordIdx = addWordArr.indexOf(p_word);
+        if(wordIdx < 0){
+            addWordArr.push(p_word);
+        }
+    }
+
+    // 단어 클릭시  
+    function f_wordClick(e) {
+        // 클릭시 글자 파란색으로 바꿔주는 클래스 추가
+        f_addClass(e.target, 'select')
+        let clickWord = e.target.innerText;
+        f_addWord(clickWord);
+    };
+    const wordsObj = document.getElementsByClassName("word");
+    for (let i = 0; i < wordsObj.length; i++) {
+        wordsObj[i].addEventListener('click', f_wordClick, false);
+    }
+
+    // 오른쪽 div에 추가된 단어들 넣는 함수
+    function f_madeClip(p_clickWordArr){
+        let clipBoard ='';
+        clipBoard += '<div class="clipBoard">';
+        clipBoard += '<div>';
+
+        for (let i = 0; i < p_clickWordArr.length; i++) {
+            clipBoard += '<p class="selWord">'+p_clickWordArr[i]+'</p>';
+        }
+        clipBoard += '</div>';
+        clipBoard += '<button onclick="f_delete(this)" data-idx="'+(localStorage.length-1)+'">X</button>';
+        clipBoard += '</div>';
+
+        document.getElementById("right").innerHTML += clipBoard;
+        addWordArr = [];
+    }
+
+    // 추가 버튼 클릭시 이벤트
+    const addBtn = document.querySelector("#addBtn")
+    addBtn.addEventListener('click', function(){
+        // addWordArr 배열에 있는 단어강조 (빨간색 bold)
+        for (let i = 0; i < addWordArr.length; i++) {
+            const clickWordObj = document.getElementsByClassName(addWordArr[i]);
+
+            f_removeClass(clickWordObj, 'select');
+            f_addClass(clickWordObj, 'highlight');
+        }   
+        // 로컬스토리지 저장
+        f_localSave(addWordArr);
+        // 오른쪽 div에 추가될 클립만들기
+        f_madeClip(addWordArr);
+
+    });
+
+    // 실행취소 버튼 클릭시 이벤트
+    const resetBtn = document.querySelector("#resetBtn")
+    resetBtn.addEventListener('click', function(){
+        
+        // 로컬스토리지 백업
+        localBackup = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            localBackup.push(JSON.parse(localStorage.getItem(i)));
+            
+        }
+        // 왼쪽 div 강조 해제
+        for (let i = 0; i < localBackup.length; i++) {
+            let localArr = localBackup[i];
+            for (let j = 0; j < localArr.length; j++) {
+                const selectedObj = document.getElementsByClassName(localArr[j]);
+                f_removeClass(selectedObj, 'highlight');
+            }
+        }
+        // 오른쪽 div 없애기
+        rightDivBackup = document.getElementById("right").innerHTML
+        document.getElementById("right").innerHTML = '';
+
+        // 로컬 스토리지 지우기
+        localStorage.clear();
+        // console.log(rightDivBackup);    
+
+    });
+
+    // 재실행 클릭시 이벤트
+    const returnBtn = document.querySelector("#returnBtn")
+    returnBtn.addEventListener('click', function(){
+
+        // 왼쪽 div 리턴
+        for (let i = 0; i < localBackup.length; i++) {
+            
+            let localArr = localBackup[i];
+            for (let j = 0; j < localArr.length; j++) {
+                const selectedObj = document.getElementsByClassName(localArr[j]);
+                f_addClass(selectedObj, 'highlight');
+            }
+            // 로컬 스토리지 리턴
+            f_localSave(localBackup[i]);
+        }
+        // 오른쪽 div 리턴
+        document.getElementById("right").innerHTML = rightDivBackup;
+
+  
+
+    });
+
+    // X버튼 클릭
+    function f_delete(btn){
+        let div = btn.parentNode;
+        let delP = div.firstChild.children;
+        let localKey = btn.dataset.idx;
+
+        // 강조 해제
+        let delWordArr = JSON.parse(localStorage.getItem(localKey));
+        for(let i = 0; i < delWordArr.length; i++){
+            const deleteObj = document.getElementsByClassName(delWordArr[i]);
+
+            f_removeClass(deleteObj, 'highlight');
+                
+            for (let j = 0; j < deleteObj.length; j++) {
+                deleteObj[j].style.color = 'black';
+                deleteObj[j].style.fontWeight = 'normal';  
+            }
+
+        }
+        // 해당 클립 삭제
+        div.parentNode.removeChild(div);
+        // 로컬스토리지에서 삭제
+        f_localRemove(localKey);
+    }
+
+    function f_mouseup(){
+        // event.preventDefault();
+
+        // 드래그시 글자 파란색으로
+        document.designMode = "on";
+        document.execCommand("foreColor", false, 'blue');
+        document.designMode = "off";
+
+        // 드래그한 단어 배열에 넣기
+        let selection = window.getSelection();
+        let selectionArr = [];
+        for (let i = 0; i < selection.rangeCount; i++) {
+            let selectNodes = selection.getRangeAt(i).cloneContents().children;
+
+            for (let j = 0; j < selectNodes.length; j++) {
+                
+                let dragWord = selectNodes[j].classList[1];
+                f_addWord(dragWord);
+
+            }
+        }
+    }
+    leftDiv.addEventListener('mouseup', f_mouseup);
+
+    // 로컬 스토리지에서 값 불러오는 함수
+    function f_localGet(){
+        for (let i = 0; i < localStorage.length; i++) {
+            let localArr = JSON.parse(localStorage.getItem(i));
+            
+            // 오른쪽 div 
+            let clipBoard ='';
+            clipBoard += '<div class="clipBoard">';
+            clipBoard += '<div>';
+
+            for (let k = 0; k < localArr.length; k++) {
+                clipBoard += '<p class="selWord">'+localArr[k]+'</p>';
+            }
+            clipBoard += '</div>';
+            clipBoard += '<button onclick="f_delete(this)" data-idx="'+i+'">X</button>';
+            clipBoard += '</div>';
+
+            document.getElementById("right").innerHTML += clipBoard;
+            
+            // 왼쪽 div 단어 강조
+            for (let j = 0; j < localArr.length; j++) {
+                const clickWordObj = document.getElementsByClassName(localArr[j]);
+
+                f_removeClass(clickWordObj, 'select');
+                f_addClass(clickWordObj, 'highlight');
+            }   
+        // console.log(selWordArr);    
+        }
+    }
+    f_localGet();
+
+</script>    
+</body>
+</html>
